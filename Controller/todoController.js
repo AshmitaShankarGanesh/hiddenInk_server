@@ -1,45 +1,55 @@
 import todoCollection from "../Model/todoModel.js";
 
-//store todo data  post
+// CREATE
 export const addTodo = async (req, res) => {
-    try {
-        const data = new todoCollection(req.body);
-        await data.save()
-        res.status(201).json({ mess: "Data has been stored" })
-    } catch (err) {
-        res.status(400).json({ message: err })
+  try {
+    if (!req.body.todo) {
+      return res.status(400).json({ message: "Todo is required" });
     }
 
-}
+    const data = new todoCollection({
+      todo: req.body.todo,      // ✅ FIXED
+      userId: req.user.id,
+    });
 
-//get
-export const getTodo = async (req,res) => {
-    try{
-        const data = await todoCollection.find();
-        res.json(data)
-    }catch(err){
-        res.status(500).json({message: err})
-    }
-}
+    await data.save();
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
 
-//put
-export const updateTodo = async (req,res) => {
-    try{
-        const data = await todoCollection.findByIdAndUpdate(req.params.id,req.body,{new:true})
-        res.json(data)
-    }catch(err){
-        res.status(400).json({message: err})
-    }
-}
+// READ
+export const getTodo = async (req, res) => {
+  try {
+    const todos = await todoCollection.find({ userId: req.user.id });
+    res.json(todos);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-//delete
-export const deleteTodo = async(req,res) => {
-    try{
-        await todoCollection.findByIdAndDelete(req.params.id)
-        res.json({message:"todo has been deleted"})
-    }catch(err){
-        res.status(500).json({message: err})
-    }
-}
+// UPDATE (MOST IMPORTANT)
+export const updateTodo = async (req, res) => {
+  try {
+    const updated = await todoCollection.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: false } // ✅ FIX
+    );
 
- 
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// DELETE
+export const deleteTodo = async (req, res) => {
+  try {
+    await todoCollection.findByIdAndDelete(req.params.id);
+    res.json({ message: "Todo deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
