@@ -1,4 +1,4 @@
-import todoCollection from "../Model/todoModel.js";
+import todoCollection from "../Model/TodoModel.js";
 
 // CREATE
 export const addTodo = async (req, res) => {
