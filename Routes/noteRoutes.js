@@ -14,10 +14,13 @@ const router = express.Router();
 
 router.post("/", authMiddleware, createNote);
 router.get("/", authMiddleware, getNotes);
-router.post("/unlock/:id", authMiddleware, unlockNote);
+
+// ✅ FIXED PATH
+router.post("/:id/unlock", authMiddleware, unlockNote);
+
+router.put("/:id", authMiddleware, updateNote);
 router.delete("/:id", authMiddleware, deleteNote);
 router.post("/share/:id", authMiddleware, shareNote);
 router.get("/share/:token", getSharedNote);
-router.put("/:id", authMiddleware, updateNote);
 
 export default router;

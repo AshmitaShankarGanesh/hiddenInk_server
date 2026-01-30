@@ -8,7 +8,10 @@ export const createNote = async (req, res) => {
     const { title, content, isLocked, password } = req.body;
 
     let hashedPassword = null;
-    if (isLocked && password) {
+    if (isLocked) {
+      if (!password) {
+        return res.status(400).json({ message: "Password required for locked note" });
+      }
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
@@ -17,7 +20,7 @@ export const createNote = async (req, res) => {
       content,
       isLocked,
       password: hashedPassword,
-      userId: req.user.id, 
+      userId: req.user.id,
     });
 
     res.status(201).json(note);
@@ -39,7 +42,6 @@ export const getNotes = async (req, res) => {
   }
 };
 
-
 /* ---------------- UNLOCK NOTE ---------------- */
 export const unlockNote = async (req, res) => {
   try {
@@ -54,6 +56,10 @@ export const unlockNote = async (req, res) => {
       return res.status(404).json({ message: "Note not found" });
     }
 
+    if (!note.password) {
+      return res.status(400).json({ message: "This note has no password set" });
+    }
+
     const valid = await bcrypt.compare(password, note.password);
     if (!valid) {
       return res.status(401).json({ message: "Wrong password" });
@@ -65,23 +71,26 @@ export const unlockNote = async (req, res) => {
       content: note.content,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Unlock failed" });
   }
 };
 
-/* ---------------- UPDATE NOTE (WITH PASSWORD CHANGE) ---------------- */
+/* ---------------- UPDATE NOTE ---------------- */
 export const updateNote = async (req, res) => {
   try {
     const { title, content, isLocked, newPassword } = req.body;
 
-    const updateData = { title, content, isLocked };
+    const updateData = { title, isLocked };
 
-    // If user wants to change/set password
+    if (content !== undefined) {
+      updateData.content = content;
+    }
+
     if (isLocked && newPassword) {
       updateData.password = await bcrypt.hash(newPassword, 10);
     }
 
-    // If unlocking note → remove password
     if (!isLocked) {
       updateData.password = null;
     }
@@ -92,24 +101,18 @@ export const updateNote = async (req, res) => {
       { new: true }
     );
 
-    if (!note) {
-      return res.status(404).json({ message: "Note not found" });
-    }
-
-    res.json({ message: "Note updated", note });
+    res.json(note);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Update failed" });
   }
 };
-
 
 /* ---------------- DELETE NOTE ---------------- */
 export const deleteNote = async (req, res) => {
   try {
     const note = await Note.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user.id, 
+      userId: req.user.id,
     });
 
     if (!note) {
@@ -128,7 +131,7 @@ export const shareNote = async (req, res) => {
     const token = crypto.randomBytes(20).toString("hex");
 
     const note = await Note.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id }, 
+      { _id: req.params.id, userId: req.user.id },
       { sharedToken: token },
       { new: true }
     );
@@ -145,7 +148,7 @@ export const shareNote = async (req, res) => {
   }
 };
 
-/* ---------------- GET SHARED NOTE (PUBLIC) ---------------- */
+/* ---------------- GET SHARED NOTE ---------------- */
 export const getSharedNote = async (req, res) => {
   try {
     const note = await Note.findOne({
