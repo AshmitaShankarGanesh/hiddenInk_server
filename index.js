@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config(); // 👈 MUST be first
+dotenv.config();
 
 import express from "express";
 import cors from "cors";
@@ -10,20 +10,35 @@ import todoRoutes from "./Routes/todoRoutes.js";
 import noteRoutes from "./Routes/noteRoutes.js";
 import adminRoutes from "./Routes/adminRoutes.js";
 
-// Debug check (temporary)
-console.log("MONGO_URI:", process.env.MONGO_URI);
-
-connectDb();
-
 const app = express();
 
+// ✅ CORS
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://hiddenink.vercel.app"
+    ],
+    credentials: true
+  })
+);
+
 app.use(express.json());
-app.use(cors());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/admin", adminRoutes);
 
+// ✅ Connect DB THEN start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+
+connectDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect DB:", err.message);
+  });
