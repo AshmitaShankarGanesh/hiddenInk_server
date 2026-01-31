@@ -10,18 +10,18 @@ import todoRoutes from "./Routes/todoRoutes.js";
 import noteRoutes from "./Routes/noteRoutes.js";
 import adminRoutes from "./Routes/adminRoutes.js";
 
+connectDb();
+
 const app = express();
 
-// ✅ CORS
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://hiddenink.vercel.app"
-    ],
-    credentials: true
-  })
-);
+// ✅ CORS (NO app.options needed)
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://hiddenink.vercel.app"
+  ],
+  credentials: true
+}));
 
 app.use(express.json());
 
@@ -30,15 +30,7 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/admin", adminRoutes);
 
-// ✅ Connect DB THEN start server
 const PORT = process.env.PORT || 5000;
-
-connectDb()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Failed to connect DB:", err.message);
-  });
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
